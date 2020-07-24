@@ -1,0 +1,11 @@
+bin/
+obj/
+/packages/
+!/packages/automation/
+!/packages/automation/*.dll
+.idea/.idea.scv/.idea/contentModel.xml
+node_modules/
+.idea/.idea.scv/.idea/dataSources.xml
+.vs/
+.user
+.idea/
