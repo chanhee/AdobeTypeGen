@@ -36,8 +36,8 @@ namespace AdobeTypeGen
             var classDefs = GenerateClassDefs(xmlDoc);
             foreach (var cls in classDefs) {
                 System.Console.WriteLine(cls);
-                foreach (var prop in cls.Props) {
-                    System.Console.WriteLine($"\t{prop.Name}: {(prop.IsDataTypeArray ? "Array<"+prop.DataType+">" : prop.DataType)}");
+                foreach (var m in cls.Methods) {
+                    System.Console.WriteLine(m.ToExpr());
                 }
             }
         }
@@ -82,7 +82,6 @@ namespace AdobeTypeGen
                 var methods = cls.Descendants(NsName("method"));
                 foreach (var m in methods) {
                     var returnTypeEl = m.Element(NsName("datatype"));
-
                     var methodDef = new MethodDef();
                     methodDef.Name = (string)m.Attribute("name");
                     methodDef.Description = (string)m.Element(NsName("shortdesc"));
@@ -93,7 +92,15 @@ namespace AdobeTypeGen
 
                     var parameters = m.Descendants(NsName("parameter"));
                     foreach (var param in parameters) {
-                        Console.WriteLine(param.Attribute("name"));
+                        var paramTypeEl = param.Element(NsName("datatype"));
+                        var paramDef = new ParameterDef();
+                        paramDef.Name = (string)param.Attribute("name");
+                        paramDef.Description = (string)param.Element(NsName("shortdesc"));
+                        paramDef.Optional = (string)param.Attribute("optional") == "true";
+                        paramDef.DataType = (string)paramTypeEl.Element(NsName("type"));
+                        paramDef.IsDataTypeArray = paramTypeEl.Element(NsName("array")) != null;
+                        paramDef.Value = (string)paramTypeEl.Element(NsName("value"));
+                        methodDef.Params.Add(paramDef);
                     }
 
                     classDef.Methods.Add(methodDef);
@@ -135,6 +142,11 @@ namespace AdobeTypeGen
         public string Max { get; set; }
         public string Description { get; set; }
         public bool ReadOnly { get; set; }
+
+        public string ToExpr()
+        {
+            return "";
+        }
     }
 
     public class MethodDef
@@ -143,10 +155,19 @@ namespace AdobeTypeGen
         public string Description { get; set; }
         public string ReturnType { get; set; }
         public bool IsReturnTypeArray { get; set; }
-        public List<Parameter> Params { get; set; } = new List<Parameter>();
+        public List<ParameterDef> Params { get; set; } = new List<ParameterDef>();
+
+        public string ToExpr()
+        {
+            var resultType = "void";
+            if (!string.IsNullOrWhiteSpace(ReturnType)) {
+                resultType = TypeConverter.Convert(ReturnType, IsReturnTypeArray);
+            }
+            return $"{Name}({string.Join(", ", Params.Select(p => p.ToExpr()))}): {resultType};";
+        }
     }
 
-    public class Parameter
+    public class ParameterDef
     {
         public string Name { get; set; }
         public string DataType { get; set; }
@@ -154,5 +175,26 @@ namespace AdobeTypeGen
         public object Value { get; set; }
         public bool Optional { get; set; }
         public string Description { get; set; }
+
+        public string ToExpr()
+        {
+            return $"{Name}{(Optional ? "?" : "")}: " +
+                   $"{TypeConverter.Convert(DataType, IsDataTypeArray)}";
+        }
+    }
+
+    public class TypeConverter
+    {
+        public static string Convert(string srcType, bool isArray)
+        {
+            var destType = srcType switch {
+                "int" => "number",
+                "Int32" => "number",
+                "bool" => "boolean",
+                "Object" => "object",
+                _ => srcType // string, number, other class
+            };
+            return destType + (isArray ? "[]" : string.Empty);
+        }
     }
 }
