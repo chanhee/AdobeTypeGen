@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 
@@ -35,10 +36,7 @@ namespace AdobeTypeGen
             var xmlDoc = XElement.Load(xmlPath);
             var classDefs = GenerateClassDefs(xmlDoc);
             foreach (var cls in classDefs) {
-                System.Console.WriteLine(cls);
-                foreach (var m in cls.Methods) {
-                    System.Console.WriteLine(m.ToExpr());
-                }
+                Console.WriteLine(cls.ToExpr());
             }
         }
 
@@ -62,6 +60,11 @@ namespace AdobeTypeGen
                 classDef.IsCollection = collections.IndexOf(classDef.Name) > -1;
                 classDef.Description = (string)cls.Element(NsName("shortdesc"));
                 classDef.SuperClass = (string)cls.Element(NsName("superclass"));
+                if (classDef.IsCollection && string.IsNullOrWhiteSpace(classDef.SuperClass)) {
+                    classDef.SuperClass = (string)cls.Descendants(NsName("method"))
+                        .First(x => "getByName" == (string)x.Attribute("name"))
+                        .Element(NsName("datatype")).Element(NsName("type"));
+                }
                 classDefs.Add(classDef);
 
                 var props = cls.Descendants(NsName("property"));
@@ -118,17 +121,32 @@ namespace AdobeTypeGen
         public bool IsEnum { get; set; }
         public string Description { get; set; }
         public bool IsCollection { get; set; }
-        public List<PropertyDef> Props { get; set; } = new List<PropertyDef>();
-        public List<MethodDef> Methods { get; set; } = new List<MethodDef>();
-        public override string ToString()
+        public List<PropertyDef> Props { get; } = new List<PropertyDef>();
+        public List<MethodDef> Methods { get; } = new List<MethodDef>();
+        public string ToExpr()
         {
             if (IsEnum) {
-                return $"{Name}: Enum";
+                return $"declare enum {Name} {{\n" +
+                       $"{string.Join("\n\n", Props.Select(p => p.ToEnumExpr()))}" +
+                       $"\n}}\n\n";
             }
-            if (IsCollection) {
-                return $"{Name}: Collection";
+            else {
+                var superClass = IsCollection ? $"Array<{SuperClass}>" : SuperClass;
+                var sb = new StringBuilder();
+                sb.Append($"declare class {Name}");
+                sb.Append($"{(!string.IsNullOrWhiteSpace(superClass) ? $" extends {superClass}" : "")} {{\n");
+                if (Props.Any()) {
+                    sb.AppendJoin("\n\n", Props.Select(p => p.ToClassExpr()));
+                }
+                if (Props.Any() && Methods.Any()) {
+                    sb.Append("\n\n");
+                }
+                if (Methods.Any()) {
+                    sb.AppendJoin("\n\n", Methods.Select(m => m.ToExpr()));
+                }
+                sb.Append("\n}\n\n");
+                return sb.ToString();
             }
-            return $"{Name}: Class";
         }
     }
 
@@ -143,9 +161,16 @@ namespace AdobeTypeGen
         public string Description { get; set; }
         public bool ReadOnly { get; set; }
 
-        public string ToExpr()
+        public string ToClassExpr()
         {
-            return "";
+            return $"  {(ReadOnly ? "readonly " : "")}" +
+                   $"{Name}: " +
+                   $"{TypeConverter.Convert(DataType, IsDataTypeArray)};";
+        }
+
+        public string ToEnumExpr()
+        {
+            return $"  {Name} = {Value},";
         }
     }
 
@@ -155,7 +180,7 @@ namespace AdobeTypeGen
         public string Description { get; set; }
         public string ReturnType { get; set; }
         public bool IsReturnTypeArray { get; set; }
-        public List<ParameterDef> Params { get; set; } = new List<ParameterDef>();
+        public List<ParameterDef> Params { get; } = new List<ParameterDef>();
 
         public string ToExpr()
         {
@@ -163,7 +188,10 @@ namespace AdobeTypeGen
             if (!string.IsNullOrWhiteSpace(ReturnType)) {
                 resultType = TypeConverter.Convert(ReturnType, IsReturnTypeArray);
             }
-            return $"{Name}({string.Join(", ", Params.Select(p => p.ToExpr()))}): {resultType};";
+
+            var sb = new StringBuilder();
+            return "  /**";
+            return $"  {Name}({string.Join(", ", Params.Select(p => p.ToExpr()))}): {resultType};";
         }
     }
 
@@ -178,7 +206,8 @@ namespace AdobeTypeGen
 
         public string ToExpr()
         {
-            return $"{Name}{(Optional ? "?" : "")}: " +
+            return $"{Name}" +
+                   $"{(Optional ? "?" : "")}: " +
                    $"{TypeConverter.Convert(DataType, IsDataTypeArray)}";
         }
     }
