@@ -36,6 +36,8 @@ namespace AdobeTypeGen
             var xmlDoc = XElement.Load(xmlPath);
             var classDefs = GenerateClassDefs(xmlDoc);
             var customTypes = GenerateCustomTypes();
+
+            Console.WriteLine("/// <reference path=\"global.d.ts\" />");
             foreach (var cls in classDefs) {
                 if (IgnoreTypes.IndexOf(cls.Name) >= 0) {
                     continue;
