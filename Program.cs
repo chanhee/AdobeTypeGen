@@ -35,9 +35,44 @@ namespace AdobeTypeGen
             //    - method
             var xmlDoc = XElement.Load(xmlPath);
             var classDefs = GenerateClassDefs(xmlDoc);
+            var customTypes = GenerateCustomTypes();
             foreach (var cls in classDefs) {
+                if (IgnoreTypes.IndexOf(cls.Name) >= 0) {
+                    continue;
+                }
                 Console.WriteLine(cls.ToExpr());
             }
+
+            foreach (var ct in customTypes) {
+                Console.WriteLine(ct.ToExpr());
+            }
+            Console.WriteLine();
+
+        }
+
+        public static readonly List<string> IgnoreTypes = new List<string> {
+            "Point", "Rectangle"
+        };
+
+        public static List<CustomType> GenerateCustomTypes()
+        {
+            var result = new List<CustomType>();
+            result.Add(new CustomType {
+                Name = "Point",
+                FullType = "[number, number]",
+                Description = "Describes a point. This class is also a two-element collection.\n" +
+                              "Format: [x, y].\n" +
+                              "**Note:** y axis is flipped. Upper means negative number, lower means positive."
+            });
+            result.Add(new CustomType {
+                Name = "Rect",
+                FullType = "[number, number, number, number]",
+                Description = "Describes a rectangle. This class is also a four-element collection.\n"+
+                              "Format: left, top, right, bottom.\n"+
+                              "Width and height can be computed using `[r[2] - r[0], r[1] - r[3]]`.\n"+
+                              "**Note:** y axis is flipped. Upper means negative number, lower means positive."
+            });
+            return result;
         }
 
         public static List<ClassDef> GenerateClassDefs(XElement xmlDoc)
@@ -114,6 +149,27 @@ namespace AdobeTypeGen
         }
     }
 
+    public class CustomType
+    {
+        public string Name { get; set; }
+        public string FullType { get; set; }
+        public string Description { get; set; }
+        public string ToExpr()
+        {
+            var descs = (Description ?? "").Split("\n");
+            var sb = new StringBuilder();
+            sb.AppendLine("/**");
+            foreach (var desc in descs) {
+                sb.Append(" * ");
+                sb.AppendLine(desc);
+            }
+            sb.AppendLine(" */");
+            sb.Append($"type {Name} = {FullType};");
+            sb.Append("\n\n");
+            return sb.ToString();
+        }
+    }
+
     public class ClassDef
     {
         public string Name { get; set; }
@@ -126,13 +182,23 @@ namespace AdobeTypeGen
         public string ToExpr()
         {
             if (IsEnum) {
-                return $"declare enum {Name} {{\n" +
-                       $"{string.Join("\n\n", Props.Select(p => p.ToEnumExpr()))}" +
-                       $"\n}}\n\n";
+                var sb = new StringBuilder();
+                sb.AppendLine("/**");
+                sb.Append(" * ");
+                sb.AppendLine(Description);
+                sb.AppendLine(" */");
+                sb.AppendLine($"declare enum {Name} {{");
+                sb.Append($"{string.Join("\n\n", Props.Select(p => p.ToEnumExpr()))}");
+                sb.Append($"\n}}\n\n");
+                return sb.ToString();
             }
             else {
                 var superClass = IsCollection ? $"Array<{SuperClass}>" : SuperClass;
                 var sb = new StringBuilder();
+                sb.AppendLine("/**");
+                sb.Append(" * ");
+                sb.AppendLine(Description);
+                sb.AppendLine(" */");
                 sb.Append($"declare class {Name}");
                 sb.Append($"{(!string.IsNullOrWhiteSpace(superClass) ? $" extends {superClass}" : "")} {{\n");
                 if (Props.Any()) {
@@ -163,14 +229,26 @@ namespace AdobeTypeGen
 
         public string ToClassExpr()
         {
-            return $"  {(ReadOnly ? "readonly " : "")}" +
-                   $"{Name}: " +
-                   $"{TypeConverter.Convert(DataType, IsDataTypeArray)};";
+            var sb = new StringBuilder();
+            sb.AppendLine("  /**");
+            sb.Append("   * ");
+            sb.AppendLine(Description);
+            sb.AppendLine("   */");
+            sb.Append($"  {(ReadOnly ? "readonly " : "")}");
+            sb.Append($"{Name}: ");
+            sb.Append($"{TypeConverter.Convert(DataType, IsDataTypeArray)};");
+            return sb.ToString();
         }
 
         public string ToEnumExpr()
         {
-            return $"  {Name} = {Value},";
+            var sb = new StringBuilder();
+            sb.AppendLine("  /**");
+            sb.Append("   * ");
+            sb.AppendLine(Description);
+            sb.AppendLine("   */");
+            sb.Append($"  {Name} = {Value},");
+            return sb.ToString();
         }
     }
 
@@ -190,8 +268,15 @@ namespace AdobeTypeGen
             }
 
             var sb = new StringBuilder();
-            return "  /**";
-            return $"  {Name}({string.Join(", ", Params.Select(p => p.ToExpr()))}): {resultType};";
+            sb.AppendLine("  /**");
+            sb.Append("   * ");
+            sb.AppendLine(Description);
+            foreach (var param in Params) {
+                sb.AppendLine($"   * {param.ToJsdoc()}");
+            }
+            sb.AppendLine("   */");
+            sb.Append($"  {Name}({string.Join(", ", Params.Select(p => p.ToExpr()))}): {resultType};");
+            return sb.ToString();
         }
     }
 
@@ -204,6 +289,22 @@ namespace AdobeTypeGen
         public bool Optional { get; set; }
         public string Description { get; set; }
 
+        public string ToJsdoc()
+        {
+            var sb = new StringBuilder();
+            sb.Append("@param ");
+            sb.Append($"{{{TypeConverter.Convert(DataType, IsDataTypeArray)}}} ");
+            if (Optional) {
+                sb.Append($"[{Name}]");
+            }
+            else {
+                sb.Append(Name);
+            }
+            if (!string.IsNullOrWhiteSpace(Description)) {
+                sb.Append($" - {Description}");
+            }
+            return sb.ToString();
+        }
         public string ToExpr()
         {
             return $"{Name}" +
