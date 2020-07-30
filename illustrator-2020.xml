@@ -15422,7 +15422,7 @@
         <property name="selectedPathPoints" rwaccess="readonly">
           <shortdesc>All the selected points in the path.</shortdesc>
           <datatype>
-            <type href="#/ObjectArray">ObjectArray</type>
+            <type href="#/PathPoints">PathPoints</type>
           </datatype>
         </property>
         <property name="polarity">
@@ -15484,7 +15484,7 @@
             <parameter name="pathPoints">
               <shortdesc>Array of (x, y) coordinate pairs for the path points.</shortdesc>
               <datatype>
-                <type>any</type>
+                <type>Point</type>
                 <array />
               </datatype>
             </parameter>
@@ -16529,7 +16529,7 @@
         <property name="selectedPathPoints" rwaccess="readonly">
           <shortdesc>All the selected points in the path.</shortdesc>
           <datatype>
-            <type href="#/ObjectArray">ObjectArray</type>
+            <type href="#/PathPoints">PathPoints</type>
           </datatype>
         </property>
         <property name="polarity">
@@ -16549,7 +16549,7 @@
             <parameter name="pathPoints">
               <shortdesc>Array of anchor values for the path points.</shortdesc>
               <datatype>
-                <type>any</type>
+                <type>Point</type>
                 <array />
               </datatype>
             </parameter>
