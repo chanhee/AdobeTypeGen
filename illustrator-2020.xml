@@ -18571,5 +18571,41 @@
         </property>
       </elements>
     </classdef>
+
+    <!-- add missing def-->
+    <classdef name="ElementPlacement" enumeration="true">
+      <elements type="class">
+        <property name="INSIDE" rwaccess="readonly">
+          <datatype>
+            <type>int</type>
+            <value>0</value>
+          </datatype>
+        </property>
+        <property name="PLACEATBEGINNING" rwaccess="readonly">
+          <datatype>
+            <type>int</type>
+            <value>1</value>
+          </datatype>
+        </property>
+        <property name="PLACEATEND" rwaccess="readonly">
+          <datatype>
+            <type>int</type>
+            <value>2</value>
+          </datatype>
+        </property>
+        <property name="PLACEBEFORE" rwaccess="readonly">
+          <datatype>
+            <type>int</type>
+            <value>3</value>
+          </datatype>
+        </property>
+        <property name="PLACEAFTER" rwaccess="readonly">
+          <datatype>
+            <type>int</type>
+            <value>4</value>
+          </datatype>
+        </property>
+      </elements>
+    </classdef>
   </package>
 </dictionary>
