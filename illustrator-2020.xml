@@ -12409,6 +12409,7 @@
             <type href="#/Document">Document</type>
           </datatype>
         </method>
+        <!--
         <method name="dumpPGFFile">
           <shortdesc>Dump the PGF portion of ai file to txt file.</shortdesc>
           <parameters>
@@ -12435,6 +12436,7 @@
             <type>bool</type>
           </datatype>
         </method>
+        -->
         <method name="quit">
           <shortdesc>Quit the application.</shortdesc>
         </method>
