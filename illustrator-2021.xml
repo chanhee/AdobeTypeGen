@@ -12418,7 +12418,7 @@
                 <type href="#/File">File</type>
               </datatype>
             </parameter>
-            <parameter name="documentColorSpace" optional="true">
+            <parameter name="documentColorSpace">
               <shortdesc>Choose color space only for documents saved with multiple color models (pre-Illustrator 9)</shortdesc>
               <datatype>
                 <type href="#/DocumentColorSpace">DocumentColorSpace</type>
