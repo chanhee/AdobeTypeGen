@@ -324,6 +324,7 @@ namespace AdobeTypeGen
                 "Int32" => "number",
                 "bool" => "boolean",
                 "Object" => "object",
+                "ObjectArray" => "PathPoints",
                 _ => srcType // string, number, other class
             };
             return destType + (isArray ? "[]" : string.Empty);
