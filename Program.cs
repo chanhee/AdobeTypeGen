@@ -143,6 +143,19 @@ namespace AdobeTypeGen
                         methodDef.Params.Add(paramDef);
                     }
 
+                // optional parameter는 맨 뒤에 위치해야한다.
+                var optionalCount = methodDef.Params.Count(x => x.Optional);
+                if (optionalCount > 0) {
+                    var expectOptionalParams = methodDef.Params.TakeLast(optionalCount).ToList();
+                    if (!expectOptionalParams.All(x => x.Optional)) {
+                        Console.WriteLine($"{methodDef.Name} - The order of the optional parameters is wrong.");
+                        foreach (var p in methodDef.Params) {
+                            p.Optional = false;
+                            Console.WriteLine($"  - {p.Name} - fixed.");
+                        }
+                    }
+                }
+
                     classDef.Methods.Add(methodDef);
                 }
             }
