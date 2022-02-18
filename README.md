@@ -5,7 +5,7 @@ Generate typescript d.ts from Adobe Scripting Dictionary xml file
 
 windows:
 
-C:\Program Files (x86)\Common Files\Adobe\Scripting Dictionaries CC\illustrator 2021\omv.xml
+C:\Program Files (x86)\Common Files\Adobe\Scripting Dictionaries CC\illustrator 2022\omv.xml
 
 macos:
 
@@ -13,5 +13,5 @@ macos:
 
 
 ```bash
-$ AdobeTypeGen omv.xml > illustrator-2020.d.ts
+$ AdobeTypeGen omv.xml illustrator-2022.d.ts
 ```
